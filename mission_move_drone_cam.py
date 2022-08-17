@@ -11,6 +11,7 @@ from time import sleep
 dir=os.getcwd()
 #sys.path.append(dir+r"\mission")
 colour=["BLUE","GREEN","RED"]
+mission_name=["","find BLUE RECTANGLE","find GREEN OR RED RECTANGLE","find QR"]
 drone = tellopy.Tello()
 altitude=12
 def down(dist):
@@ -53,6 +54,7 @@ def mission(is_up,mv_dist,mv_angle,t_up,t_down,mission_state):
     global altitude
     if(is_up):
         if(not t_up.is_alive()):
+            print("now mission : ",mission_name[mission_state])
             if(altitude>=9):
                 print("now altitude: "+str(altitude))
                 if(mission_state==1): t_down=Thread(target=down,args=(mv_dist,))
@@ -68,6 +70,7 @@ def mission(is_up,mv_dist,mv_angle,t_up,t_down,mission_state):
                 mission_cnt+=1
     else:
         if(not t_down.is_alive()):
+            print("now mission : ",mission_name[mission_state])
             if(altitude<=20):
                 print("now altitude: "+str(altitude))
                 if(mission_state==1): t_up=Thread(target=up,args=(mv_dist,))

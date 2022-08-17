@@ -11,6 +11,7 @@ from time import sleep
 dir=os.getcwd()
 #sys.path.append(dir+r"\mission")
 colour=["BLUE","GREEN","RED"]
+mission_name=["","finding BLUE RECTANGLE","finding GREEN OR RED RECTANGLE","finding QR"]
 def down(dist):
     print("Down "+str(dist))
     sleep(dist/10*2)
@@ -42,6 +43,7 @@ def upandrotate(dist,angle):
 def mission(altitude,is_up,mv_dist,mv_angle,t_up,t_down,mission_cnt,mission_state):
     if(is_up):
         if(not t_up.is_alive()):
+            print("now mission is",mission_name[mission_state])
             if(altitude>=90):
                 altitude-=10
                 print("now altitude: "+str(altitude))
@@ -59,6 +61,7 @@ def mission(altitude,is_up,mv_dist,mv_angle,t_up,t_down,mission_cnt,mission_stat
                 mission_cnt+=1
     else:
         if(not t_down.is_alive()):
+            print("now mission is",mission_name[mission_state])
             if(altitude<=20):
                 altitude+=10
                 print("now altitude: "+str(altitude))
