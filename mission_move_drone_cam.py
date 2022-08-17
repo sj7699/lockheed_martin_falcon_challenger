@@ -95,6 +95,8 @@ def handler(event, sender, data, **args):
 def main():
     global drone
     try:
+        fourcc=cv2.VideoWriter_fourcc(*'DIVX')
+        out=cv2.VideoWriter('output101.avi',fourcc,30,(960,720))
         drone.connect()
         drone.wait_for_connection(60.0)
         drone.subscribe(drone.EVENT_FLIGHT_DATA, handler)
@@ -170,6 +172,7 @@ def main():
                 if(t_stop.is_alive()):
                     if(detect_rect is not None):                        
                         cv2.drawContours(image,detect_rect,-1,(0,0,255),4)
+                out.write(image)
                 cv2.imshow('Original', image)
                 cv2.imshow('canny',img2)
                 if(cv2.waitKey(1)>0):
@@ -181,7 +184,8 @@ def main():
                     time_base = frame.time_base
                 frame_skip = int((time.time() - start_time)/time_base)
             if(k):
-                # out.release()
+                out.release()
+                sleep(3)
                 cv2.destroyAllWindows() 
                 drone.quit()    
                 break  

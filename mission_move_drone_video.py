@@ -105,6 +105,8 @@ def main():
         mv_dist=10
         mv_angle=400
         is_up=False
+        fourcc=cv2.VideoWriter_fourcc(*'DIVX')
+        out=cv2.VideoWriter('output2.avi',fourcc,30,(960,720))
         while container is None and 0 < retry:
             retry -= 1
             try:
@@ -160,6 +162,7 @@ def main():
                 if(t_stop.is_alive()):
                     if(detect_rect is not None):                        
                         cv2.drawContours(image,detect_rect,-1,(0,0,255),4)
+                out.write(image)
                 cv2.imshow('Original', image)
                 cv2.imshow('canny',img2)
                 if(cv2.waitKey(1)>0):
@@ -171,7 +174,8 @@ def main():
                     time_base = frame.time_base
                 frame_skip = int((time.time() - start_time)/time_base)
             if(k):
-                # out.release()
+                out.release()
+                sleep(3)
                 cv2.destroyAllWindows() 
                 # drone.land()
                 # drone.quit()    
