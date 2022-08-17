@@ -131,8 +131,8 @@ def main():
                         continue
                     detect_rect=contour
                     detect_color=np.argmax(image[rect_y+int(rect_h/2)][rect_x+int(rect_w/2)])
-                    print(image[rect_y+int(rect_h/2)][rect_x+int(rect_w/2)])
                     break
+                
                 if(mission_state==1):
                     altitude,is_up,t_up,t_down,mission1_cnt=mission(altitude,is_up,mv_dist,mv_angle,t_up,t_down,mission1_cnt,mission_state)
                     if(detect_rect is not None and detect_color==0 and points is None): 
