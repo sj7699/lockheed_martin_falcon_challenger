@@ -131,7 +131,7 @@ def main():
                     break
                 if(mission_state==1):
                     altitude,is_up,t_up,t_down,mission1_cnt=mission(altitude,is_up,mv_dist,mv_angle,t_up,t_down,mission1_cnt,mission_state)
-                    if(detect_rect is not None): 
+                    if(detect_rect is not None and detect_color==0): 
                         mission_state=2
                         detect_image=image.copy()
                         cv2.drawContours(detect_image,detect_rect,-1,(0,0,255),4)
@@ -142,7 +142,7 @@ def main():
                         sleep(4)
                 if(mission_state==2):
                     altitude,is_up,t_upandrotate,t_downandrotate,mission2_cnt=mission(altitude,is_up,mv_dist,mv_angle,t_upandrotate,t_downandrotate,mission2_cnt,mission_state)
-                    if(detect_rect is not None): 
+                    if(detect_rect is not None and detect_color!=0): 
                         mission_state=3
                         detect_image=image.copy()
                         cv2.drawContours(detect_image,detect_rect,-1,(0,0,255),4)
