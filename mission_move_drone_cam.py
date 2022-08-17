@@ -35,6 +35,15 @@ def stop(t):
     sleep(t)
     print("stop FINISH")
 
+def stop2(t):
+    global drone
+    print("stop")
+    drone.set_pitch=0
+    drone.set_roll=0
+    drone.set_throttle=0
+    sleep(t)
+    print("stop FINISH")
+
 def rotate(angle):
     global drone
     print("rotate "+str(angle))
