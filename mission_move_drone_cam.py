@@ -12,6 +12,7 @@ dir=os.getcwd()
 #sys.path.append(dir+r"\mission")
 colour=["RED","GREEN","BLUE"]
 drone = tellopy.Tello()
+altitude=12
 def down(dist):
     global drone
     print("Down "+str(dist))
@@ -20,19 +21,24 @@ def down(dist):
     print("DOWN FINISH")
 
 def up(dist):
+    global drone
     print("UP "+str(dist))
     drone.up(dist)
     sleep(dist/10*2)
     print("UP FINISH")
 
 def stop():
+    global drone
     print("stop")
+    drone.send_packet_data('stop')
     sleep(4)
     print("stop FINISH")
 
 def rotate(angle):
+    global drone
     print("rotate "+str(angle))
-    sleep(3)
+    drone.clockwise(angle)
+    sleep(4)
     print("rotate FINISH")
 
 def downandrotate(dist,angle):
@@ -43,11 +49,11 @@ def upandrotate(dist,angle):
     up(dist)
     rotate(angle)
 
-def mission(altitude,is_up,mv_dist,mv_angle,t_up,t_down,mission_cnt,mission_state):
+def mission(is_up,mv_dist,mv_angle,t_up,t_down,mission_state):
+    global altitude
     if(is_up):
         if(not t_up.is_alive()):
-            if(altitude>=90):
-                altitude-=10
+            if(altitude>=9):
                 print("now altitude: "+str(altitude))
                 if(mission_state==1): t_down=Thread(target=down,args=(mv_dist,))
                 else: t_down=Thread(target=downandrotate,args=(mv_dist,mv_angle))
@@ -55,7 +61,6 @@ def mission(altitude,is_up,mv_dist,mv_angle,t_up,t_down,mission_cnt,mission_stat
                 is_up=False
                 mission_cnt+=1
             else:
-                altitude+=10
                 print("now altitude: "+str(altitude))
                 if(mission_state==1): t_up=Thread(target=up,args=(mv_dist,))
                 else: t_up=Thread(target=upandrotate,args=(mv_dist,mv_angle))
@@ -64,7 +69,6 @@ def mission(altitude,is_up,mv_dist,mv_angle,t_up,t_down,mission_cnt,mission_stat
     else:
         if(not t_down.is_alive()):
             if(altitude<=20):
-                altitude+=10
                 print("now altitude: "+str(altitude))
                 if(mission_state==1): t_up=Thread(target=up,args=(mv_dist,))
                 else: t_up=Thread(target=upandrotate,args=(mv_dist,mv_angle))
@@ -72,14 +76,19 @@ def mission(altitude,is_up,mv_dist,mv_angle,t_up,t_down,mission_cnt,mission_stat
                 is_up=True
                 mission_cnt+=1
             else:
-                altitude-=10
                 print("now altitude: "+str(altitude))
                 if(mission_state==1): t_down=Thread(target=down,args=(mv_dist,))
                 else: t_down=Thread(target=downandrotate,args=(mv_dist,mv_angle))
                 t_down.start()
                 mission_cnt+=1 
-    return altitude,is_up,t_up,t_down,mission_cnt
+    return is_up,t_up,t_down
 
+def handler(event, sender, data, **args):
+    global altitude
+    here_drone = sender
+    if event is here_drone.EVENT_FLIGHT_DATA:
+        altitude=data.height
+        
 def main():
     global drone
     try:
@@ -134,7 +143,7 @@ def main():
                     detect_color=np.argmax(image[rect_y+int(rect_h/2)][rect_x+int(rect_w/2)])
                     break
                 if(mission_state==1):
-                    altitude,is_up,t_up,t_down,mission1_cnt=mission(altitude,is_up,mv_dist,mv_angle,t_up,t_down,mission1_cnt,mission_state)
+                    is_up,t_up,t_down=mission(is_up,mv_dist,mv_angle,t_up,t_down,mission_state)
                     if(detect_rect is not None): 
                         mission_state=2
                         detect_image=image.copy()
@@ -145,7 +154,7 @@ def main():
                         stop()
                         sleep(4)
                 if(mission_state==2):
-                    altitude,is_up,t_upandrotate,t_downandrotate,mission2_cnt=mission(altitude,is_up,mv_dist,mv_angle,t_upandrotate,t_downandrotate,mission2_cnt,mission_state)
+                    is_up,t_upandrotate,t_downandrotate=mission(is_up,mv_dist,mv_angle,t_upandrotate,t_downandrotate,mission_state)
                     if(detect_rect is not None): 
                         mission_state=3
                         detect_image=image.copy()
