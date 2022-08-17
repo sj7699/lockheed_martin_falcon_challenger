@@ -21,9 +21,9 @@ def up(dist):
     sleep(dist/10*2)
     print("UP FINISH")
 
-def stop():
+def stop(t):
     print("stop")
-    sleep(4)
+    sleep(t)
     print("stop FINISH")
 
 def rotate(angle):
@@ -90,6 +90,7 @@ def main():
         t_down = Thread(target=down,args=(50,))
         t_downandrotate=Thread(target=downandrotate,args=(10,400))
         t_upandrotate=Thread(target=upandrotate,args=(10,400))
+        t_stop=Thread(target=stop,args=(4,))
         retry = 3
         container = None
         mission_state=1
@@ -137,29 +138,25 @@ def main():
                     altitude,is_up,t_up,t_down,mission1_cnt=mission(altitude,is_up,mv_dist,mv_angle,t_up,t_down,mission1_cnt,mission_state)
                     if(detect_rect is not None and detect_color==0 and points is None): 
                         mission_state=2
-                        detect_image=image.copy()
-                        cv2.drawContours(detect_image,detect_rect,-1,(0,0,255),4)
                         print(colour[detect_color])
-                        cv2.imshow("Detected",detect_image)
-                        cv2.waitKey(10)
-                        stop()
-                        sleep(4)
-                if(mission_state==2):
+                        t_stop.start()
+                if(mission_state==2 and not t_stop.is_alive()):
                     altitude,is_up,t_upandrotate,t_downandrotate,mission2_cnt=mission(altitude,is_up,mv_dist,mv_angle,t_upandrotate,t_downandrotate,mission2_cnt,mission_state)
                     if(detect_rect is not None and detect_color!=0 and points is None): 
                         mission_state=3
-                        detect_image=image.copy()
-                        cv2.drawContours(detect_image,detect_rect,-1,(0,0,255),4)
                         print(colour[detect_color])
-                        cv2.imshow("Detected",detect_image)
-                        cv2.waitKey(10)
-                        stop()
-                if(mission_state==3):
+                        t_stop=Thread(target=stop,args=(0.5,))
+                        t_stop.start()
+                if(mission_state==3 and not t_stop.is_alive()):
+                    altitude,is_up,t_upandrotate,t_downandrotate,mission2_cnt=mission(altitude,is_up,mv_dist,mv_angle,t_upandrotate,t_downandrotate,mission2_cnt,mission_state)
                     if(points is not None):
                         print(decodedText)
                         print("land")
                         k=True
                         break
+                if(t_stop.is_alive()):
+                    if(detect_rect is not None):                        
+                        cv2.drawContours(image,detect_rect,-1,(0,0,255),4)
                 cv2.imshow('Original', image)
                 cv2.imshow('canny',img2)
                 if(cv2.waitKey(1)>0):
