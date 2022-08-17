@@ -104,7 +104,7 @@ def main():
         while container is None and 0 < retry:
             retry -= 1
             try:
-                container = av.open(r"C:\Users\sj\Documents\Tello_prac")
+                container = av.open(r"C:\Users\sj\Documents\Tello_prac\test3.mp4")
             except av.AVError as ave:
                 print(ave)
                 print('retry...')
@@ -116,7 +116,7 @@ def main():
                 image = cv2.cvtColor(np.array(frame.to_image()), cv2.COLOR_RGB2BGR)
                 detector=cv2.QRCodeDetector()
                 decodedText, points, _ = detector.detectAndDecode(image)  
-                img2 = cv2.Canny(image, 240, 240)    
+                img2 = cv2.Canny(image, 200, 200)    
                 #_,img_thresh=cv2.threshold(img2,127,255,cv2.THRESH_BINARY_INV)
                 contours,hier = cv2.findContours(img2,cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_NONE)
                 detect_rect=None
@@ -124,14 +124,14 @@ def main():
                 for contour in contours:
                     approx = cv2.approxPolyDP(contour,0.01 * cv2.arcLength(contour, True), True)
                     rect_x,rect_y,rect_w,rect_h=cv2.boundingRect(contour)
-                    if(rect_w<8 or rect_h<8 or len(approx)!=4):
+                    if(rect_w<30 or rect_h<30 or len(approx)!=4):
                         continue
                     detect_rect=contour
                     detect_color=np.argmax(image[rect_y+int(rect_h/2)][rect_x+int(rect_w/2)])
                     break
                 if(mission_state==1):
                     altitude,is_up,t_up,t_down,mission1_cnt=mission(altitude,is_up,mv_dist,mv_angle,t_up,t_down,mission1_cnt,mission_state)
-                    if(detect_rect is not None and detect_color==0): 
+                    if(detect_rect is not None and detect_color==0 and points is None): 
                         mission_state=2
                         detect_image=image.copy()
                         cv2.drawContours(detect_image,detect_rect,-1,(0,0,255),4)
@@ -142,7 +142,7 @@ def main():
                         sleep(4)
                 if(mission_state==2):
                     altitude,is_up,t_upandrotate,t_downandrotate,mission2_cnt=mission(altitude,is_up,mv_dist,mv_angle,t_upandrotate,t_downandrotate,mission2_cnt,mission_state)
-                    if(detect_rect is not None and detect_color!=0): 
+                    if(detect_rect is not None and detect_color!=0 and points is None): 
                         mission_state=3
                         detect_image=image.copy()
                         cv2.drawContours(detect_image,detect_rect,-1,(0,0,255),4)
@@ -154,6 +154,8 @@ def main():
                     if(points is not None):
                         print(decodedText)
                         print("land")
+                        k=True
+                        break
                 cv2.imshow('Original', image)
                 cv2.imshow('canny',img2)
                 if(cv2.waitKey(1)>0):
