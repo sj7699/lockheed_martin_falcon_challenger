@@ -10,7 +10,7 @@ from threading import Thread
 from time import sleep
 dir=os.getcwd()
 #sys.path.append(dir+r"\mission")
-colour=["RED","GREEN","BLUE"]
+colour=["BLUE","GREEN","RED"]
 drone = tellopy.Tello()
 altitude=12
 def down(dist):
@@ -129,15 +129,16 @@ def main():
                 image = cv2.cvtColor(np.array(frame.to_image()), cv2.COLOR_RGB2BGR)
                 detector=cv2.QRCodeDetector()
                 decodedText, points, _ = detector.detectAndDecode(image)  
-                img2 = cv2.Canny(image, 240, 240)    
+                img2 = cv2.Canny(image, 180, 180)    
                 #_,img_thresh=cv2.threshold(img2,127,255,cv2.THRESH_BINARY_INV)
                 contours,hier = cv2.findContours(img2,cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_NONE)
                 detect_rect=None
                 detect_color=3
                 for contour in contours:
-                    approx = cv2.approxPolyDP(contour,0.01 * cv2.arcLength(contour, True), True)
                     rect_x,rect_y,rect_w,rect_h=cv2.boundingRect(contour)
-                    if(rect_w<8 or rect_h<8 or len(approx)!=4):
+                    contour_area=cv2.contourArea(contour)
+                    extend=float(contour_area)/(rect_w*rect_h)
+                    if(rect_w<150 or rect_h<150 or extend<0.7):
                         continue
                     detect_rect=contour
                     detect_color=np.argmax(image[rect_y+int(rect_h/2)][rect_x+int(rect_w/2)])
