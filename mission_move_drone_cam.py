@@ -18,14 +18,14 @@ def down(dist):
     global drone
     print("Down "+str(dist))
     drone.down(dist)
-    sleep(dist/10*2)
+    sleep(5)
     print("DOWN FINISH")
 
 def up(dist):
     global drone
     print("UP "+str(dist))
     drone.up(dist)
-    sleep(dist/10*2)
+    sleep(5)
     print("UP FINISH")
 
 def stop(t):
@@ -48,7 +48,7 @@ def rotate(angle):
     global drone
     print("rotate "+str(angle))
     drone.clockwise(angle)
-    sleep(4)
+    sleep(8)
     print("rotate FINISH")
 
 def downandrotate(dist,angle):
@@ -102,12 +102,11 @@ def main():
     try:
         fourcc=cv2.VideoWriter_fourcc(*'DIVX')
         out=cv2.VideoWriter('output101.avi',fourcc,30,(960,720))
+        drone.subscribe(drone.EVENT_FLIGHT_DATA, handler)
         drone.connect()
         drone.wait_for_connection(60.0)
-        drone.subscribe(drone.EVENT_FLIGHT_DATA, handler)
         print("take off!")
         drone.takeoff()
-        sleep(5)
         print("take off finished")
         t_up=Thread(target=up,args=(10,))
         t_down = Thread(target=down,args=(50,))
@@ -117,7 +116,6 @@ def main():
         retry = 3
         container = None
         mission_state=1
-        down(40)
         mv_dist=10
         mv_angle=400
         is_up=False
@@ -128,15 +126,20 @@ def main():
             except av.AVError as ave:
                 print(ave)
                 print('retry...')
-        frame_skip = 0
+        frame_skip = 500
         while True:
             k=False
             for frame in container.decode(video=0):
+                if 0 < frame_skip:
+                    frame_skip = frame_skip - 1
+                    continue
                 start_time = time.time()
                 image = cv2.cvtColor(np.array(frame.to_image()), cv2.COLOR_RGB2BGR)
                 detector=cv2.QRCodeDetector()
                 decodedText, points, _ = detector.detectAndDecode(image)  
                 img2 = cv2.Canny(image, 180, 180)    
+                kernel=np.ones((3,3),int)
+                img2=cv2.dilate(img2,kernel,iterations=1) 
                 #_,img_thresh=cv2.threshold(img2,127,255,cv2.THRESH_BINARY_INV)
                 contours,hier = cv2.findContours(img2,cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_NONE)
                 detect_rect=None
@@ -145,7 +148,7 @@ def main():
                     rect_x,rect_y,rect_w,rect_h=cv2.boundingRect(contour)
                     contour_area=cv2.contourArea(contour)
                     extend=float(contour_area)/(rect_w*rect_h)
-                    if(rect_w<150 or rect_h<150 or extend<0.7):
+                    if(rect_w<15 or rect_h<15 or extend<0.6):
                         continue
                     detect_rect=contour
                     detect_color=np.argmax(image[rect_y+int(rect_h/2)][rect_x+int(rect_w/2)])
@@ -166,18 +169,21 @@ def main():
                 if(mission_state==3 and not t_stop.is_alive()):
                     is_up,t_upandrotate,t_downandrotate=mission(is_up,mv_dist,mv_angle,t_upandrotate,t_downandrotate,mission_state)
                     if(points is not None):
-                        print(decodedText)
-                        drone.land()
-                        k=True
-                        break
+                        points_mean=np.mean(points,axis=1)[0]
+                        print(points_mean)
+                        if(points_mean[0]>250 and points_mean[0]<400 and points_mean[1]>200 and points_mean[1]<600):
+                            print(decodedText)
+                            print("land")
+                            k=True
+                            break
                 if(t_stop.is_alive()):
                     if(detect_rect is not None):                        
                         cv2.drawContours(image,detect_rect,-1,(0,0,255),4)
-                out.write(image)
                 cv2.imshow('Original', image)
                 cv2.imshow('canny',img2)
                 if(cv2.waitKey(1)>0):
                     k=True
+                    drone.land()
                     break
                 if frame.time_base < 1.0/60:
                     time_base = 1.0/60
@@ -185,10 +191,10 @@ def main():
                     time_base = frame.time_base
                 frame_skip = int((time.time() - start_time)/time_base)
             if(k):
-                out.release()
                 sleep(3)
                 cv2.destroyAllWindows() 
-                drone.quit()    
+                drone.quit()  
+                drone.land()  
                 break  
 
     except Exception as ex:

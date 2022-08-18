@@ -110,7 +110,7 @@ def main():
         while container is None and 0 < retry:
             retry -= 1
             try:
-                container = av.open(r"C:\Users\sj\Documents\Tello_prac\test1.mp4")
+                container = av.open(r"C:\Users\sj\Documents\Tello_prac\testdrone.avi")
             except av.AVError as ave:
                 print(ave)
                 print('retry...')
@@ -134,7 +134,7 @@ def main():
                     if(np.max(image[rect_y+int(rect_h/2)][rect_x+int(rect_w/2)])<80):
                         continue
                     extend=float(contour_area)/(rect_w*rect_h)
-                    if(rect_w<150 or rect_h<150 or extend<0.7):
+                    if(contour_area<200 or extend<0.7):
                         continue
                     detect_rect=contour
                     detect_color=np.argmax(image[rect_y+int(rect_h/2)][rect_x+int(rect_w/2)])
@@ -156,10 +156,13 @@ def main():
                 if(mission_state==3 and not t_stop.is_alive()):
                     altitude,is_up,t_upandrotate,t_downandrotate,mission2_cnt=mission(altitude,is_up,mv_dist,mv_angle,t_upandrotate,t_downandrotate,mission2_cnt,mission_state)
                     if(points is not None):
-                        print(decodedText)
-                        print("land")
-                        k=True
-                        break
+                        points_mean=np.mean(points,axis=1)[0]
+                        print(points_mean)
+                        if(points_mean[0]>250 and points_mean[0]<400 and points_mean[1]>200 and points_mean[1]<600):
+                            print(decodedText)
+                            print("land")
+                            k=True
+                            break
                 if(t_stop.is_alive()):
                     if(detect_rect is not None):         
                         rect_x,rect_y,rect_w,rect_h=cv2.boundingRect(contour)               
@@ -168,7 +171,8 @@ def main():
                 out.write(image)
                 cv2.imshow('Original', image)
                 cv2.imshow('canny',img_dil)
-                if(cv2.waitKey(1)>0):
+                entk=cv2.waitKey(1)
+                if(entk>0):
                     k=True
                     break
                 if frame.time_base < 1.0/60:
