@@ -11,25 +11,43 @@ from time import sleep
 dir=os.getcwd()
 #sys.path.append(dir+r"\mission")
 colour=["BLUE","GREEN","RED"]
-mission_name=["","finding BLUE RECTANGLE","finding GREEN OR RED RECTANGLE","finding QR"]
+mission_name=["","find BLUE RECTANGLE","find GREEN OR RED RECTANGLE","find QR"]
+drone = tellopy.Tello()
 def down(dist):
+    global drone
     print("Down "+str(dist))
+    drone.down(dist)
     sleep(dist/10*2)
     print("DOWN FINISH")
 
 def up(dist):
+    global drone
     print("UP "+str(dist))
+    drone.up(dist)
     sleep(dist/10*2)
     print("UP FINISH")
 
 def stop(t):
+    global drone
     print("stop")
+    drone.send_packet_data('stop')
+    sleep(t)
+    print("stop FINISH")
+
+def stop2(t):
+    global drone
+    print("stop")
+    drone.set_pitch=0
+    drone.set_roll=0
+    drone.set_throttle=0
     sleep(t)
     print("stop FINISH")
 
 def rotate(angle):
+    global drone
     print("rotate "+str(angle))
-    sleep(3)
+    drone.clockwise(angle)
+    sleep(4)
     print("rotate FINISH")
 
 def downandrotate(dist,angle):
@@ -39,7 +57,6 @@ def downandrotate(dist,angle):
 def upandrotate(dist,angle):
     up(dist)
     rotate(angle)
-
 def mission(altitude,is_up,mv_dist,mv_angle,t_up,t_down,mission_cnt,mission_state):
     if(is_up):
         if(not t_up.is_alive()):
@@ -80,13 +97,15 @@ def mission(altitude,is_up,mv_dist,mv_angle,t_up,t_down,mission_cnt,mission_stat
     return altitude,is_up,t_up,t_down,mission_cnt
 
 def main():
-    #drone = tellopy.Tello()
+    global drone
     try:
-    #     drone.connect()
-    #     drone.wait_for_connection(60.0)
-    #     drone.subscribe(drone.EVENT_FLIGHT_DATA, handler)
+        fourcc=cv2.VideoWriter_fourcc(*'DIVX')
+        out=cv2.VideoWriter('output101.avi',fourcc,30,(960,720))
+        drone.connect()
+        drone.wait_for_connection(60.0)
+        drone.subscribe(drone.EVENT_FLIGHT_DATA, handler)
         print("take off!")
-    #     drone.takeoff()
+        drone.takeoff()
         sleep(5)
         print("take off finished")
         t_up=Thread(target=up,args=(10,))
@@ -98,19 +117,17 @@ def main():
         container = None
         mission_state=1
         down(40)
-        altitude=80
+        mv_dist=10
+        mv_angle=400
         mission1_cnt=0
         mission2_cnt=0
         mission3_cnt=0
-        mv_dist=10
-        mv_angle=400
+        altitude=80
         is_up=False
-        fourcc=cv2.VideoWriter_fourcc(*'DIVX')
-        out=cv2.VideoWriter('output3.avi',fourcc,30,(960,720))
         while container is None and 0 < retry:
             retry -= 1
             try:
-                container = av.open(r"C:\Users\sj\Documents\Tello_prac\test1.mp4")
+                container = av.open(drone.get_video_stream())
             except av.AVError as ave:
                 print(ave)
                 print('retry...')
@@ -122,52 +139,46 @@ def main():
                 image = cv2.cvtColor(np.array(frame.to_image()), cv2.COLOR_RGB2BGR)
                 detector=cv2.QRCodeDetector()
                 decodedText, points, _ = detector.detectAndDecode(image)  
-                img2 = cv2.Canny(image, 180, 180)  
-                kernel=np.ones((3,3),int)
-                img_dil=cv2.dilate(img2,kernel,iterations=1) 
-                contours,hier = cv2.findContours(img_dil,cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_NONE)
+                img2 = cv2.Canny(image, 180, 180)    
+                #_,img_thresh=cv2.threshold(img2,127,255,cv2.THRESH_BINARY_INV)
+                contours,hier = cv2.findContours(img2,cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_NONE)
                 detect_rect=None
                 detect_color=3
                 for contour in contours:
                     rect_x,rect_y,rect_w,rect_h=cv2.boundingRect(contour)
                     contour_area=cv2.contourArea(contour)
-                    if(np.max(image[rect_y+int(rect_h/2)][rect_x+int(rect_w/2)])<80):
-                        continue
                     extend=float(contour_area)/(rect_w*rect_h)
                     if(rect_w<150 or rect_h<150 or extend<0.7):
                         continue
                     detect_rect=contour
                     detect_color=np.argmax(image[rect_y+int(rect_h/2)][rect_x+int(rect_w/2)])
                     break
-                
                 if(mission_state==1):
                     altitude,is_up,t_up,t_down,mission1_cnt=mission(altitude,is_up,mv_dist,mv_angle,t_up,t_down,mission1_cnt,mission_state)
-                    if(detect_rect is not None and detect_color==0 and points is None): 
+                    if(detect_rect is not None and detect_color==1 and points is None): 
                         mission_state=2
                         print(colour[detect_color])
                         t_stop.start()
                 if(mission_state==2 and not t_stop.is_alive()):
                     altitude,is_up,t_upandrotate,t_downandrotate,mission2_cnt=mission(altitude,is_up,mv_dist,mv_angle,t_upandrotate,t_downandrotate,mission2_cnt,mission_state)
-                    if(detect_rect is not None and detect_color!=0 and points is None): 
+                    if(detect_rect is not None and detect_color!=1 and points is None): 
                         mission_state=3
                         print(colour[detect_color])
-                        t_stop=Thread(target=stop,args=(0.5,))
+                        t_stop=Thread(target=stop,args=(0,5,))
                         t_stop.start()
                 if(mission_state==3 and not t_stop.is_alive()):
-                    altitude,is_up,t_upandrotate,t_downandrotate,mission2_cnt=mission(altitude,is_up,mv_dist,mv_angle,t_upandrotate,t_downandrotate,mission2_cnt,mission_state)
+                    altitude,is_up,t_upandrotate,t_downandrotate,mission3_cnt=mission(altitude,is_up,mv_dist,mv_angle,t_upandrotate,t_downandrotate,mission3_cnt,mission_state)
                     if(points is not None):
                         print(decodedText)
-                        print("land")
+                        drone.land()
                         k=True
                         break
                 if(t_stop.is_alive()):
-                    if(detect_rect is not None):         
-                        rect_x,rect_y,rect_w,rect_h=cv2.boundingRect(contour)               
+                    if(detect_rect is not None):                        
                         cv2.drawContours(image,detect_rect,-1,(0,0,255),4)
-                        cv2.putText(image,colour[detect_color], (int(rect_x+rect_w/2),int(rect_y+rect_h/2)),cv2.FONT_HERSHEY_SIMPLEX,3,(255,255,255),8)
                 out.write(image)
                 cv2.imshow('Original', image)
-                cv2.imshow('canny',img_dil)
+                cv2.imshow('canny',img2)
                 if(cv2.waitKey(1)>0):
                     k=True
                     break
@@ -180,8 +191,7 @@ def main():
                 out.release()
                 sleep(3)
                 cv2.destroyAllWindows() 
-                # drone.land()
-                # drone.quit()    
+                drone.quit()    
                 break  
 
     except Exception as ex:
