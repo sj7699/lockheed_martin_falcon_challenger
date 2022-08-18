@@ -141,9 +141,9 @@ def main():
                 image = cv2.cvtColor(np.array(frame.to_image()), cv2.COLOR_RGB2BGR)
                 detector=cv2.QRCodeDetector()
                 decodedText, points, _ = detector.detectAndDecode(image)  
-                img2 = cv2.Canny(image, 180, 180)    
+                img2 = cv2.Canny(image, 80, 100)    
                 kernel=np.ones((3,3),int)
-                img2=cv2.dilate(img2,kernel,iterations=1) 
+                img2=cv2.dilate(img2,kernel,iterations=3) 
                 #_,img_thresh=cv2.threshold(img2,127,255,cv2.THRESH_BINARY_INV)
                 contours,hier = cv2.findContours(img2,cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_NONE)
                 detect_rect=None
@@ -152,7 +152,7 @@ def main():
                     rect_x,rect_y,rect_w,rect_h=cv2.boundingRect(contour)
                     contour_area=cv2.contourArea(contour)
                     extend=float(contour_area)/(rect_w*rect_h)
-                    if(contour_area<200 or extend<0.7):
+                    if(contour_area<900 or extend<0.7):
                         continue
                     detect_rect=contour
                     dir=[[0,1],[0,-1],[1,0],[-1,0],[0,0]]
@@ -187,7 +187,6 @@ def main():
                         cv2.drawContours(image,detect_rect,-1,(0,0,255),4)
                 out.write(image)
                 cv2.imshow('Original', image)
-                cv2.imshow('canny',img2)
                 if(cv2.waitKey(1)>0):
                     k=True
                     drone.land()

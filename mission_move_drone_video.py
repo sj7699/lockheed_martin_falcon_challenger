@@ -10,8 +10,8 @@ from threading import Thread
 from time import sleep
 dir=os.getcwd()
 #sys.path.append(dir+r"\mission")
-colour=["BLUE","GREEN","RED"]
-mission_name=["","finding BLUE RECTANGLE","finding GREEN OR RED RECTANGLE","finding QR"]
+colour=["BLUE","GREEN","RED","NOISE"]
+mission_name=["","finding RED RECTANGLE","finding GREEN OR BLUE RECTANGLE","finding QR"]
 def down(dist):
     print("Down "+str(dist))
     sleep(dist/10*2)
@@ -110,7 +110,7 @@ def main():
         while container is None and 0 < retry:
             retry -= 1
             try:
-                container = av.open(r"C:\Users\sj\Documents\Tello_prac\testdrone2.avi")
+                container = av.open(r"C:\Users\sj\Documents\Tello_prac\testdrone3.avi")
             except av.AVError as ave:
                 print(ave)
                 print('retry...')
@@ -122,19 +122,19 @@ def main():
                 image = cv2.cvtColor(np.array(frame.to_image()), cv2.COLOR_RGB2BGR)
                 detector=cv2.QRCodeDetector()
                 decodedText, points, _ = detector.detectAndDecode(image)  
-                img2 = cv2.Canny(image, 180, 180)  
+                img2 = cv2.Canny(image, 80, 100)  
                 kernel=np.ones((3,3),int)
-                img_dil=cv2.dilate(img2,kernel,iterations=1) 
+                img_dil=cv2.dilate(img2,kernel,iterations=3) 
                 contours,hier = cv2.findContours(img_dil,cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_NONE)
                 detect_rect=None
                 detect_color=3
                 for contour in contours:
                     rect_x,rect_y,rect_w,rect_h=cv2.boundingRect(contour)
                     contour_area=cv2.contourArea(contour)
-                    if(np.max(image[rect_y+int(rect_h/2)][rect_x+int(rect_w/2)])<80):
+                    if(np.max(image[rect_y+int(rect_h/2)][rect_x+int(rect_w/2)])<70):
                         continue
                     extend=float(contour_area)/(rect_w*rect_h)
-                    if(contour_area<200 or extend<0.7):
+                    if(contour_area<900 or extend<0.7):
                         continue
                     detect_rect=contour
                     dir=[[0,1],[0,-1],[1,0],[-1,0],[0,0]]
@@ -160,8 +160,6 @@ def main():
                 if(mission_state==3 and not t_stop.is_alive()):
                     altitude,is_up,t_upandrotate,t_downandrotate,mission2_cnt=mission(altitude,is_up,mv_dist,mv_angle,t_upandrotate,t_downandrotate,mission2_cnt,mission_state)
                     if(points is not None):
-                        points_mean=np.mean(points,axis=1)[0]
-                        print(points_mean)
                         if(len(decodedText)>0):
                             print(decodedText)
                             print("land")
@@ -174,7 +172,7 @@ def main():
                         cv2.putText(image,colour[detect_color], (int(rect_x+rect_w/2),int(rect_y+rect_h/2)),cv2.FONT_HERSHEY_SIMPLEX,3,(255,255,255),8)
                 out.write(image)
                 cv2.imshow('Original', image)
-                cv2.imshow('canny',img_dil)
+                cv2.imshow('canny', img_dil)
                 entk=cv2.waitKey(1)
                 if(entk>0):
                     k=True
