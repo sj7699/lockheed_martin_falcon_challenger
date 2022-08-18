@@ -107,7 +107,11 @@ def main():
         drone.wait_for_connection(60.0)
         print("take off!")
         drone.takeoff()
+        sleep(4)
         print("take off finished")
+        print("down")
+        down()
+        print("down FINISH")
         t_up=Thread(target=up,args=(10,))
         t_down = Thread(target=down,args=(50,))
         t_downandrotate=Thread(target=downandrotate,args=(10,400))
@@ -148,7 +152,7 @@ def main():
                     rect_x,rect_y,rect_w,rect_h=cv2.boundingRect(contour)
                     contour_area=cv2.contourArea(contour)
                     extend=float(contour_area)/(rect_w*rect_h)
-                    if(rect_w<15 or rect_h<15 or extend<0.6):
+                    if(contour_area<200 or extend<0.7):
                         continue
                     detect_rect=contour
                     detect_color=np.argmax(image[rect_y+int(rect_h/2)][rect_x+int(rect_w/2)])
@@ -164,7 +168,7 @@ def main():
                     if(detect_rect is not None and detect_color!=1 and points is None): 
                         mission_state=3
                         print(colour[detect_color])
-                        t_stop=Thread(target=stop,args=(0,5,))
+                        t_stop=Thread(target=stop,args=(0.5,))
                         t_stop.start()
                 if(mission_state==3 and not t_stop.is_alive()):
                     is_up,t_upandrotate,t_downandrotate=mission(is_up,mv_dist,mv_angle,t_upandrotate,t_downandrotate,mission_state)
