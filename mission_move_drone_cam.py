@@ -11,7 +11,7 @@ from time import sleep
 dir=os.getcwd()
 #sys.path.append(dir+r"\mission")
 colour=["BLUE","GREEN","RED"]
-mission_name=["","find BLUE RECTANGLE","find GREEN OR RED RECTANGLE","find QR"]
+mission_name=["","find RED RECTANGLE","find GREEN OR BLUE RECTANGLE","find QR"]
 drone = tellopy.Tello()
 altitude=12
 def down(dist):
@@ -110,7 +110,7 @@ def main():
         sleep(4)
         print("take off finished")
         print("down")
-        down()
+        down(20)
         print("down FINISH")
         t_up=Thread(target=up,args=(10,))
         t_down = Thread(target=down,args=(50,))
@@ -155,17 +155,21 @@ def main():
                     if(contour_area<200 or extend<0.7):
                         continue
                     detect_rect=contour
-                    detect_color=np.argmax(image[rect_y+int(rect_h/2)][rect_x+int(rect_w/2)])
+                    dir=[[0,1],[0,-1],[1,0],[-1,0],[0,0]]
+                    color_arr=[]
+                    for now_dir in dir:
+                        color_arr.append(image[rect_y+int(rect_h/2)+now_dir[0]][rect_x+int(rect_w/2)+now_dir[1]])
+                    detect_color=np.argmax(np.mean(color_arr,axis=0))
                     break
                 if(mission_state==1):
                     is_up,t_up,t_down=mission(is_up,mv_dist,mv_angle,t_up,t_down,mission_state)
-                    if(detect_rect is not None and detect_color==1 and points is None): 
+                    if(detect_rect is not None and detect_color==2 and points is None): 
                         mission_state=2
                         print(colour[detect_color])
                         t_stop.start()
                 if(mission_state==2 and not t_stop.is_alive()):
                     is_up,t_upandrotate,t_downandrotate=mission(is_up,mv_dist,mv_angle,t_upandrotate,t_downandrotate,mission_state)
-                    if(detect_rect is not None and detect_color!=1 and points is None): 
+                    if(detect_rect is not None and detect_color!=2 and points is None): 
                         mission_state=3
                         print(colour[detect_color])
                         t_stop=Thread(target=stop,args=(0.5,))
@@ -173,9 +177,7 @@ def main():
                 if(mission_state==3 and not t_stop.is_alive()):
                     is_up,t_upandrotate,t_downandrotate=mission(is_up,mv_dist,mv_angle,t_upandrotate,t_downandrotate,mission_state)
                     if(points is not None):
-                        points_mean=np.mean(points,axis=1)[0]
-                        print(points_mean)
-                        if(points_mean[0]>250 and points_mean[0]<400 and points_mean[1]>200 and points_mean[1]<600):
+                        if(len(decodedText)!=0):
                             print(decodedText)
                             print("land")
                             k=True
@@ -183,6 +185,7 @@ def main():
                 if(t_stop.is_alive()):
                     if(detect_rect is not None):                        
                         cv2.drawContours(image,detect_rect,-1,(0,0,255),4)
+                out.write(image)
                 cv2.imshow('Original', image)
                 cv2.imshow('canny',img2)
                 if(cv2.waitKey(1)>0):
@@ -195,10 +198,11 @@ def main():
                     time_base = frame.time_base
                 frame_skip = int((time.time() - start_time)/time_base)
             if(k):
+                out.release()
                 sleep(3)
                 cv2.destroyAllWindows() 
-                drone.quit()  
                 drone.land()  
+                drone.quit()  
                 break  
 
     except Exception as ex:

@@ -110,7 +110,7 @@ def main():
         while container is None and 0 < retry:
             retry -= 1
             try:
-                container = av.open(r"C:\Users\sj\Documents\Tello_prac\testdrone.avi")
+                container = av.open(r"C:\Users\sj\Documents\Tello_prac\testdrone2.avi")
             except av.AVError as ave:
                 print(ave)
                 print('retry...')
@@ -137,18 +137,22 @@ def main():
                     if(contour_area<200 or extend<0.7):
                         continue
                     detect_rect=contour
-                    detect_color=np.argmax(image[rect_y+int(rect_h/2)][rect_x+int(rect_w/2)])
+                    dir=[[0,1],[0,-1],[1,0],[-1,0],[0,0]]
+                    color_arr=[]
+                    for now_dir in dir:
+                        color_arr.append(image[rect_y+int(rect_h/2)+now_dir[0]][rect_x+int(rect_w/2)+now_dir[1]])
+                    detect_color=np.argmax(np.mean(color_arr,axis=0))
                     break
                 
                 if(mission_state==1):
                     altitude,is_up,t_up,t_down,mission1_cnt=mission(altitude,is_up,mv_dist,mv_angle,t_up,t_down,mission1_cnt,mission_state)
-                    if(detect_rect is not None and detect_color==0 and points is None): 
+                    if(detect_rect is not None and detect_color==2 and points is None): 
                         mission_state=2
                         print(colour[detect_color])
                         t_stop.start()
                 if(mission_state==2 and not t_stop.is_alive()):
                     altitude,is_up,t_upandrotate,t_downandrotate,mission2_cnt=mission(altitude,is_up,mv_dist,mv_angle,t_upandrotate,t_downandrotate,mission2_cnt,mission_state)
-                    if(detect_rect is not None and detect_color!=0 and points is None): 
+                    if(detect_rect is not None and detect_color!=2 and points is None): 
                         mission_state=3
                         print(colour[detect_color])
                         t_stop=Thread(target=stop,args=(0.5,))
@@ -158,7 +162,7 @@ def main():
                     if(points is not None):
                         points_mean=np.mean(points,axis=1)[0]
                         print(points_mean)
-                        if(points_mean[0]>250 and points_mean[0]<400 and points_mean[1]>200 and points_mean[1]<600):
+                        if(len(decodedText)>0):
                             print(decodedText)
                             print("land")
                             k=True
