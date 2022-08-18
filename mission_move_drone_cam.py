@@ -78,7 +78,7 @@ def mission(is_up,mv_dist,mv_angle,t_up,t_down,mission_state):
     else:
         if(not t_down.is_alive()):
             print("now mission : ",mission_name[mission_state])
-            if(altitude<=20):
+            if(altitude<=2):
                 print("now altitude: "+str(altitude))
                 if(mission_state==1): t_up=Thread(target=up,args=(mv_dist,))
                 else: t_up=Thread(target=upandrotate,args=(mv_dist,mv_angle))
