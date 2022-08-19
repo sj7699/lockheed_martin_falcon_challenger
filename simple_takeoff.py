@@ -17,8 +17,11 @@ def test():
         drone.wait_for_connection(60.0)
         drone.takeoff()
         sleep(5)
-        drone.down(50)
-        sleep(5)
+        drone.down(20)
+        # drone.set_throttle(-1)
+        # sleep(2)
+        # drone.set_throttle(0)
+        sleep(8)
         drone.land()
         sleep(5)
     except Exception as ex:

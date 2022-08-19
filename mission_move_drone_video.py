@@ -110,7 +110,7 @@ def main():
         while container is None and 0 < retry:
             retry -= 1
             try:
-                container = av.open(r"C:\Users\sj\Documents\Tello_prac\testdrone3.avi")
+                container = av.open(r"C:\Users\sj\Documents\Tello_prac\testdrone44.avi")
             except av.AVError as ave:
                 print(ave)
                 print('retry...')
