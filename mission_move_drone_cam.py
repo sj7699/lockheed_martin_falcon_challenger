@@ -181,13 +181,18 @@ def main():
                 if(mission_state==1):
                     is_up,t_up,t_down=mission(is_up,mv_dist,mv_angle,t_up,t_down,mission_state)
                     if(detect_rect is not None and detect_color==2 and points is None): 
+                        cv2.imwrite("Red_Detected.png",image)
                         mission_state=2
                         print(colour[detect_color])
                         t_stop.start()
                 if(mission_state==2 and not t_stop.is_alive()):
                     is_up,t_upandrotate,t_downandrotate=mission(is_up,mv_dist,mv_angle,t_upandrotate,t_downandrotate,mission_state)
                     if(detect_rect is not None and detect_color!=2 and points is None and len(contours)<3): 
-                        mission_state=3
+                        mission_state=3                        
+                        rect_x,rect_y,rect_w,rect_h=cv2.boundingRect(detect_rect)               
+                        cv2.drawContours(image,detect_rect,-1,(0,0,255),4)
+                        cv2.putText(image,colour[detect_color], (int(rect_x+rect_w/2),int(rect_y+rect_h/2)),cv2.FONT_HERSHEY_SIMPLEX,3,(255,255,255),8)
+                        cv2.imwrite(colour[detect_color]+"_Detected.png",image)
                         print(colour[detect_color])
                         t_stop=Thread(target=stop,args=(2,))
                         t_stop.start()
@@ -201,7 +206,7 @@ def main():
                             break
                 if(t_stop.is_alive()):
                     if(detect_rect is not None):                        
-                        rect_x,rect_y,rect_w,rect_h=cv2.boundingRect(contour)               
+                        rect_x,rect_y,rect_w,rect_h=cv2.boundingRect(detect_rect)               
                         cv2.drawContours(image,detect_rect,-1,(0,0,255),4)
                         cv2.putText(image,colour[detect_color], (int(rect_x+rect_w/2),int(rect_y+rect_h/2)),cv2.FONT_HERSHEY_SIMPLEX,3,(255,255,255),8)
                 out.write(image)
