@@ -19,7 +19,7 @@ def down(dist):
     print("now attitude :",altitude)
     print("Down "+str(dist))
     drone.down(dist)
-    sleep(6)
+    sleep(7)
     drone.set_throttle(0)
     print("DOWN FINISH")
 
@@ -28,7 +28,7 @@ def init_down(dist):
     print("now attitude :",altitude)
     print("Down "+str(dist))
     drone.down(dist)
-    sleep(3)
+    sleep(6)
     drone.set_throttle(0)
     print("DOWN FINISH")
 
@@ -45,7 +45,7 @@ def stop(t):
     global drone
     print("stop")
     drone.set_throttle(0)
-    sleep(5)
+    sleep(3)
     print("stop FINISH")
 
 def stop2(t):
@@ -190,7 +190,7 @@ def main():
                         t_stop.start()
                 if(mission_state==2 and not t_stop.is_alive()):
                     is_up,t_upandrotate,t_downandrotate=mission(is_up,mv_dist,mv_angle,t_upandrotate,t_downandrotate,mission_state)
-                    if(detect_rect is not None and detect_color!=2 and points is None and len(contours)<3): 
+                    if(detect_rect is not None and detect_color!=2 and points is None): 
                         mission_state=3                        
                         rect_x,rect_y,rect_w,rect_h=cv2.boundingRect(detect_rect)               
                         cv2.drawContours(image,detect_rect,-1,(0,0,255),4)
