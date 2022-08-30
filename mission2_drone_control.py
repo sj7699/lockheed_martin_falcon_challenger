@@ -43,6 +43,85 @@ def dist_measure(r_pix):
 
     return x
 
+def down(dist):
+    global drone
+    print("Down " + str(dist) + "cm")
+    drone.move_down(dist)
+    sleep(3)
+    print("Down Finish")
+
+def up(dist):
+    global drone
+    print("Up " + str(dist) + "cm")
+    drone.move_up(dist)
+    sleep(3)
+    print("Up Finish")
+
+def mission1(dist):
+    global drone
+    print("Up " + str(dist) + "cm")
+    drone.move_up(dist)
+    sleep(3)
+    print("Down " + str(dist) + "cm")
+    drone.move_down(dist)
+    sleep(3)
+    print("Up & Down Finish")
+
+def mission2():
+    global drone
+    print("Flip Forward")
+    drone.flip_forward
+    sleep(3)
+    drone.move_back(20) # 앞으로 flip 하므로 다시 뒤로 복귀해야 할 듯 싶습니다.
+    sleep(3)
+    print("Flip Forward Finish")
+
+def mission3(dist):
+    global drone
+    print("Down " + str(dist) + "cm")
+    drone.move_down(dist)
+    sleep(3)
+    print("Up " + str(dist) + "cm")
+    drone.move_up(dist)
+    sleep(3)
+    print("Down & Up Finish")
+
+def mission4():
+    global drone
+    print("Flip Left")
+    drone.flip_left
+    sleep(3)
+    drone.move_right(20) # 왼쪽으로 flip 하므로 다시 오른쪽으로 복귀해야 할 듯 싶습니다.
+    sleep(3)
+    print("Flip Left Finish") 
+
+def mission5():
+    global drone
+    print("Rotate CW 360 Degree")
+    drone.rotate_clockwise(360)
+    sleep(3)
+    print("Rotate Finish")
+
+def qr_mission(calc):
+    global drone
+    print("mission : " + str(calc) +" start!")
+    if calc == 1:
+        t_mission1 = Thread(target=mission1, args = 30)
+        t_mission1.start()
+    elif calc == 2:
+        t_mission2 = Thread(target=mission2)
+        t_mission2.start()
+    elif calc == 3:
+        t_mission3 = Thread(target=mission3, args = 30)
+        t_mission3.start()
+    elif calc == 4:
+        t_mission4 = Thread(target=mission4)
+        t_mission4.start()
+    elif calc ==5:
+        t_mission5 = Thread(target=mission5)
+        t_mission5.start()
+
+
 def main():
     #variables
     global drone
@@ -66,7 +145,6 @@ def main():
     P0_d = np.array([6,6,6,6,6])
     detect_color = None
     color_detect_desire = None
-    marker = False
     mission_state = 0  # which flag(color) to detect
     mission_process = 0   # drone control process at the mission state
 
@@ -86,11 +164,11 @@ def main():
         
         while True:
             k = False
-
+            marker = False
             image = frame_read.frame
             image_out = image.copy()
 
-            #blur
+            #blurb
             image_blur = cv2.GaussianBlur(image,(0,0),3,3)
 
             #gray
@@ -120,7 +198,7 @@ def main():
             for cnt in contours:
                 
                 # ellipse detection
-                (el_cx, el_cy),(el_h,el_w),angle = cv2.fitEllipse(cnt)
+                (el_cx, el_cy),(el_h,el_w),angle = cv2.fitEllipse(cnt) #타원찾는거?
                 area = cv2.contourArea(cnt)
                 area_el = math.pi *el_h*el_w*0.25
                 
@@ -161,7 +239,7 @@ def main():
                 v_color = sum_color/5
                 detect_color = v_color.argmax()
 
-                if fit >= 0.95 and area > 3000 and detect_color == color_detect_desire:
+                if fit >= 0.95 and area > 3500 and detect_color == color_detect_desire:
                     marker = True
                     
                     #save maximum area ellipse
@@ -188,12 +266,13 @@ def main():
                     #color str save
                     if detect_color == 0:
                         color = 'BLUE'
+                    
                     elif detect_color == 1:
                         color = 'GREEN'
+                    
                     elif detect_color == 2:
                         color = 'RED'
-                else:
-                    marker = False
+                    
 
             if el_exist == True:
                 
@@ -226,6 +305,7 @@ def main():
             ####################################
             if mission_process == 0: # rotate counter-clockwise until find the marker
                 iter_0 = iter_0 + 1  # 지금은 marker 찾기 까지 무작정 돌기 이지만 미션 수행을 위해 360 돌고 뒤로 빠지고로 고쳐야 할듯 함
+                iter_3 = 0
                 if iter_0 == 10:
                     drone.send_rc_control(0, 0, 0, -25) 
                     iter_0 = 0
@@ -235,7 +315,7 @@ def main():
 
             elif mission_process == 1: # PID control center of the ellipse be center of the image frame
                 iter_1 = iter_1 + 1
-
+                iter_0 = 0
                 if iter_1 == 10:
                     drone.send_rc_control(0, 0, 0, -15) # first inertia
                     e_x = 0
@@ -301,6 +381,7 @@ def main():
 
             elif mission_process == 2: # control drone to hover in front of the flag in distance 50cm
                 iter_2 = iter_2 + 1
+                iter_1 = 0
 
                 if iter_2 == 3:
                     e_x = 0
@@ -393,12 +474,23 @@ def main():
             elif mission_process == 3: # detect circle and print color 
 
                 iter_3 = iter_3 + 1
+                iter_2 = 0
 
                 if iter_3 == 10:
-
-                    drone.send_rc_control(0, 0, 0, 0)
+                    detector=cv2.QRCodeDetector()
+                    decodedText, points, _ = detector.detectAndDecode(image)  
+                    if(len(decodedText)>0):
+                        mission_state+=1
+                        mission_process=0
+                        drone.send_rc_control(0, 0, 0, 0)
+                        P0 = np.array([6,6,6,6,6])
+                        P0_d = np.array([6,6,6,6,6])
+                        iter_center = 0
+                        filt_iter = 0
+                        filt_iter_d = 0
+                    else:
+                        drone.send_rc_control(0, 0, -7, 0)
                     iter_3 = 0
-
                     if mission_state == 0:
                         print('GREEN')
                     elif mission_state == 1:
