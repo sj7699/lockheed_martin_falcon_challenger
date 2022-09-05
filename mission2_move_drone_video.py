@@ -10,6 +10,8 @@ from threading import Thread
 from time import sleep
 
 drone=djitellopy.Tello()
+
+
 def down(dist):
     global drone
     drone.move_down(dist)

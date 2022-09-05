@@ -9,6 +9,7 @@ import os,sys
 from threading import Thread
 from time import sleep
 import math
+import pyzbar.pyzbar as pyzbar
 
 drone = Tello()
 
@@ -72,10 +73,10 @@ def mission1(dist):
 def mission2():
     global drone
     print("Flip Forward")
-    sleep(2)
-    drone.flip_forward()
     sleep(3)
     drone.move_back(20) # 앞으로 flip 하므로 다시 뒤로 복귀해야 할 듯 싶습니다.
+    sleep(3)
+    drone.flip_forward()
     sleep(3)
     print("Flip Forward Finish")
 
@@ -92,7 +93,7 @@ def mission3(dist):
 def mission4():
     global drone
     print("Flip Left")
-    sleep(2)
+    sleep(3)
     drone.flip_left()
     sleep(3)
     drone.move_right(20) # 왼쪽으로 flip 하므로 다시 오른쪽으로 복귀해야 할 듯 싶습니다.
@@ -323,11 +324,9 @@ def main():
             if mission_state == -1: # down&up and read QR for hovering 5seconds
                 
                 # QR detect 1 right after take-off
-                detector = cv2.QRCodeDetector()
-                decodedText, points, _ = detector.detectAndDecode(image)
-                
-                if(len(decodedText)!=0):
-                    print(decodedText)
+                detectqr=pyzbar.decode(image)
+                if(len(detectqr)!=0):
+                    print(detectqr[0].data.decode('utf-8'))
                     print("Hovering Start!")
                     if(not t_hover.is_alive()): t_hover.start()
                     mission_state = mission_state + 1
@@ -439,11 +438,11 @@ def main():
                     #error save
                     e_x = -el_var_avg_d[0] + 480
                     e_y = -el_var_avg_d[1] + 360
-                    e_dist = - dist_d + 70 
+                    e_dist = - dist_d + 45
 
                     #PID
-                    roll_pid = -(PD(e_x, e_x_old, del_t, K_P, K_D))
-                    throttle_pid = 1.1*(PD(e_y, e_y_old, del_t, K_P, K_D))
+                    roll_pid = -0.8*(PD(e_x, e_x_old, del_t, K_P-0.01, K_D))
+                    throttle_pid = 1.4*(PD(e_y, e_y_old, del_t, K_P, K_D))
                     pitch_pid = -1.8*(PD(e_dist, e_dist_old, del_t, K_P, K_D))
 
                     #print(roll_pid,pitch_pid,throttle_pid)
@@ -509,12 +508,12 @@ def main():
             elif mission_process == 4:  # down & read QR & do QR mission % up
                 
                 # QR detect 2nd
-                detector2 = cv2.QRCodeDetector()
-                decodedText2, points, _ = detector2.detectAndDecode(image)
-                
-                if(len(decodedText2)!=0):
-                    print(decodedText2)
-                    calc = eval(decodedText2)
+                detectqrs=pyzbar.decode(image)
+                now_str=""
+                if(len(detectqrs)!=0): now_str=detectqrs[0].data.decode('utf-8')
+                if(len(now_str)!=0):
+                    print(now_str)
+                    calc = eval(now_str)
                     print(calc)
                     if(not t_qr.is_alive()):
                         drone.send_rc_control(0, 0, 0, 0)

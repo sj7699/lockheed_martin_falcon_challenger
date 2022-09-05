@@ -2,10 +2,10 @@ import sys
 import traceback
 import tellopy
 import av
-import cv2 as cv2  # for avoidance of pylint error
+import cv2  # for avoidance of pylint error
 import numpy
 import time
-
+import pyzbar.pyzbar as pyzbar
 
 def main():
     drone = tellopy.Tello()
@@ -37,9 +37,12 @@ def main():
 
                 start_time = time.time()
                 image = cv2.cvtColor(numpy.array(frame.to_image()), cv2.COLOR_RGB2BGR)
-                out.write(image)
                 cv2.imshow('Original', image)
                 cv2.imshow('Canny', cv2.Canny(image, 100, 200))
+                qrs=pyzbar.decode(image)
+                if(len(qrs)==0): print("noqr")
+                if(len(qrs)==1): print("single ",qrs[0].data.decode('utf-8'))
+                if(len(qrs)>1): print("multiple ",qrs[0].data.decode('utf-8'))
                 p=cv2.waitKey(1)
                 if(p>0):
                     out.release()
@@ -49,8 +52,6 @@ def main():
                 else:
                     time_base = frame.time_base
                 frame_skip = int((time.time() - start_time)/time_base)
-                    
-
     except Exception as ex:
         exc_type, exc_value, exc_traceback = sys.exc_info()
         traceback.print_exception(exc_type, exc_value, exc_traceback)
