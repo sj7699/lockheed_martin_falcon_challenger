@@ -64,10 +64,10 @@ def mission1(dist):
     global drone
     print("Up " + str(dist) + "cm")
     drone.move_up(dist)
-    sleep(3)
+    sleep(2)
     print("Down " + str(dist) + "cm")
     drone.move_down(dist)
-    sleep(3)
+    sleep(2)
     print("Up & Down Finish")
 
 def mission2():
@@ -95,8 +95,6 @@ def mission4():
     print("Flip Left")
     sleep(3)
     drone.flip_left()
-    sleep(3)
-    drone.move_right(20) # 왼쪽으로 flip 하므로 다시 오른쪽으로 복귀해야 할 듯 싶습니다.
     sleep(3)
     print("Flip Left Finish") 
 
@@ -331,11 +329,6 @@ def main():
                     if(not t_hover.is_alive()): t_hover.start()
                     mission_state = mission_state + 1
                     mission_process = 0  
-            
-            if mission_process ==0 and is_before_mission and not t_qr.is_alive() and not t_mission_up.is_alive():
-                    t_mission_up=Thread(target=up,args=(30,))
-                    t_mission_up.start() 
-                    is_before_mission=False
             
             if mission_process == 0 and not t_hover.is_alive() and not t_qr.is_alive() and not t_mission_up.is_alive(): # rotate counter-clockwise until find the marker
                 iter_0 = iter_0 + 1
